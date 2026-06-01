@@ -18,12 +18,18 @@ ENV/
 .ipynb_checkpoints/
 
 # Dataset files should stay local, but keep the folder structure
-dataset/raw/*
-dataset/processed/*
-dataset/splits/*
+dataset/raw/**
+dataset/processed/**
+dataset/splits/**
 !dataset/raw/.gitkeep
 !dataset/processed/.gitkeep
 !dataset/splits/.gitkeep
+!dataset/splits/train/
+!dataset/splits/train/.gitkeep
+!dataset/splits/validation/
+!dataset/splits/validation/.gitkeep
+!dataset/splits/test/
+!dataset/splits/test/.gitkeep
 
 # Trained models and checkpoints
 models/*
