@@ -1,0 +1,55 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables and local settings
+.env
+.env.*
+*.local
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Dataset files should stay local, but keep the folder structure
+dataset/raw/*
+dataset/processed/*
+dataset/splits/*
+!dataset/raw/.gitkeep
+!dataset/processed/.gitkeep
+!dataset/splits/.gitkeep
+
+# Trained models and checkpoints
+models/*
+!models/.gitkeep
+*.h5
+*.keras
+*.ckpt
+*.pth
+*.pt
+*.onnx
+
+# Generated outputs, but keep the folder structure
+outputs/figures/*
+outputs/reports/*
+!outputs/figures/.gitkeep
+!outputs/reports/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# IDE and editor files
+.idea/
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
