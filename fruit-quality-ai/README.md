@@ -1,29 +1,48 @@
-# Fruit Quality AI
+# Fruit Quality Classification using Transfer Learning
 
-## Project Overview
+## Project Summary
 
-Fruit Quality AI is a computer vision project for classifying fruit images into
-16 freshness and quality categories, such as fresh apple or rotten banana. The
-project includes dataset preparation, train/validation/test splitting, baseline
-model training, evaluation, single-image prediction, and a Streamlit demo app
-for portfolio presentation.
+This project is a computer vision system for classifying fruit images into fresh
+and rotten quality categories. It uses transfer learning to identify both the
+fruit type and its freshness condition, such as `fresh_apple`, `rotten_banana`,
+or `fresh_orange`.
+
+Fruit quality classification is useful because food inspection is a repeated,
+visual task in supermarkets, warehouses, supply chains, and sorting workflows.
+Automating part of this process can support faster screening, reduce manual
+inspection effort, and help identify poor-quality produce earlier.
+
+What makes this project realistic is that it does not stop at controlled test
+accuracy. A separate phone-captured real-world test set was created to measure
+how well the models generalise outside the original dataset environment.
 
 ## Real-World Motivation
 
-Fruit quality inspection matters in grocery retail, food supply chains, sorting
-systems, and waste reduction workflows. Manual inspection is time-consuming and
-can be inconsistent. A lightweight image classification pipeline can help show
-how machine learning might support early quality screening in a structured
-environment.
+Food quality inspection is important in retail and supply chain operations.
+Supermarkets and warehouses need to identify damaged or rotten produce before it
+reaches customers, while sorting systems can benefit from fast visual screening.
+
+Better fruit quality detection can also support food waste reduction. If produce
+is classified more consistently, businesses can separate sellable, damaged, and
+spoiled items earlier in the workflow.
+
+Real-world testing matters because controlled dataset performance can be
+misleading. Phone-captured images introduce domain shift through different
+lighting, backgrounds, camera angles, distances, and fruit appearances. Testing
+on these images gives a more honest view of deployment readiness.
 
 ## Dataset
 
-This project uses the **Mendeley Fresh and Rotten Fruits Dataset**.
+This project uses the **Mendeley Fresh and Rotten Fruits Dataset** as the main
+training and evaluation dataset.
 
 - 16 classes
-- Fresh and rotten fruit categories
-- Image classification setup using folder-based labels
-- Local dataset storage only; dataset files should not be committed
+- 3,200 original images
+- Balanced dataset with 200 images per class
+- Folder-based labels for fresh and rotten fruit categories
+- Separate real-world phone-captured test set for generalisation testing
+- Dataset files are stored locally and are not committed to GitHub
+- Trained model files are stored locally and are not committed to GitHub
 
 Expected local folder structure:
 
@@ -35,50 +54,104 @@ dataset/
     train/
     validation/
     test/
+  real_world/
 ```
 
 ## Project Workflow
 
-1. Inspect the dataset structure with `src/analyze_dataset.py`
-2. Format or organize raw data with `src/format_dataset.py`
-3. Create train, validation, and test splits with `src/split_dataset.py`
-4. Train the baseline MobileNetV2 model with `src/train_baseline.py`
-5. Evaluate the saved model with `src/evaluate_model.py`
-6. Run single-image inference with `src/predict_image.py`
-7. Present the trained model in the Streamlit demo app at `app/streamlit_app.py`
+1. Dataset inspection with `src/analyze_dataset.py`
+2. Dataset formatting with `src/format_dataset.py`
+3. Train/validation/test split with `src/split_dataset.py`
+4. Baseline MobileNetV2 training with `src/train_baseline.py`
+5. Model evaluation with `src/evaluate_model.py`
+6. Single-image prediction with `src/predict_image.py`
+7. Streamlit demo with `app/streamlit_app.py`
+8. Real-world testing with `src/evaluate_real_world.py`
+9. Model comparison with `src/compare_models.py`
 
-## Model Approach
+## Model Training
 
-The baseline model uses **MobileNetV2 transfer learning** with TensorFlow/Keras.
+The main baseline model uses **MobileNetV2 transfer learning** with
+TensorFlow/Keras.
 
-- Input size: `224 x 224`
-- Base architecture: `MobileNetV2`
-- Transfer learning with ImageNet weights
+- Image size: `224 x 224`
+- Transfer learning with an ImageNet-pretrained MobileNetV2 backbone
+- Frozen backbone during baseline training
+- Custom classification head for 16 fruit quality classes
 - Data augmentation during training
-- Final classifier head for 16 classes
+- Trained for 10 epochs
 - Saved model path: `models/baseline_mobilenetv2.keras`
 
-The current Streamlit demo follows the same preprocessing logic as the working
-single-image prediction script:
-
-- convert image to RGB
-- resize to `224 x 224`
-- convert to NumPy array
-- add batch dimension
-- keep the raw `0-255` pixel range
-- do not apply `mobilenet_v2.preprocess_input` again during inference
+EfficientNetB0 was also trained as a comparison model using the same image size
+and dataset split. It reached similar controlled test accuracy but slightly
+weaker real-world accuracy.
 
 ## Results
 
-Baseline model results:
+| Model | Original Test Accuracy | Real-World Accuracy | Notes |
+| --- | ---: | ---: | --- |
+| MobileNetV2 | 97.50% | 81.82% | Preferred deployment model |
+| EfficientNetB0 | 97.50% | 79.55% | Similar test accuracy, weaker real-world generalisation |
 
-- Train accuracy: `98.48%`
-- Validation accuracy: `97.29%`
-- Test accuracy: `97.50%`
-- Test loss: `0.1149`
+Additional EfficientNetB0 metrics:
 
-These results indicate strong performance on the controlled dataset split, with
-good generalisation from training to validation and test data.
+- Train accuracy: `98.18%`
+- Validation accuracy: `97.08%`
+- Test loss: `0.1195`
+
+## Key Findings
+
+- High test accuracy does not guarantee real-world performance.
+- Real-world phone images introduced domain shift.
+- Error analysis helped identify weak classes.
+- Rotten apple was a weak class in real-world testing.
+- Targeted retraining improved rotten apple performance.
+- MobileNetV2 was retained because it gave better real-world performance while
+  remaining lightweight.
+
+## How to Run
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Train MobileNetV2:
+
+```bash
+python src/train_baseline.py
+```
+
+Evaluate MobileNetV2:
+
+```bash
+python src/evaluate_model.py
+```
+
+Predict a single image:
+
+```bash
+python src/predict_image.py path/to/your_image.jpg
+```
+
+Run the Streamlit app:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Train EfficientNetB0:
+
+```bash
+python src/train_efficientnet.py
+```
+
+Compare models:
+
+```bash
+python src/compare_models.py
+```
 
 ## Project Structure
 
@@ -89,128 +162,47 @@ fruit-quality-ai/
 |-- dataset/
 |   |-- raw/
 |   |-- processed/
-|   `-- splits/
-|       |-- train/
-|       |-- validation/
-|       `-- test/
+|   |-- splits/
+|   `-- real_world/
 |-- models/
-|   `-- baseline_mobilenetv2.keras
-|-- notebooks/
+|   |-- baseline_mobilenetv2.keras
+|   `-- efficientnetb0.keras
 |-- outputs/
 |   |-- figures/
 |   `-- reports/
 |-- src/
 |   |-- analyze_dataset.py
+|   |-- analyze_real_world_errors.py
+|   |-- compare_models.py
 |   |-- config.py
 |   |-- evaluate_model.py
+|   |-- evaluate_real_world.py
+|   |-- evaluate_real_world_efficientnet.py
 |   |-- format_dataset.py
 |   |-- predict_image.py
 |   |-- split_dataset.py
-|   `-- train_baseline.py
+|   |-- train_baseline.py
+|   `-- train_efficientnet.py
 |-- requirements.txt
 `-- README.md
 ```
 
-## Setup
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-## How To Run Training
-
-Before training, make sure the processed dataset exists and the split folders
-have been created.
-
-Create dataset splits:
-
-```bash
-python src/split_dataset.py
-```
-
-Train the baseline model:
-
-```bash
-python src/train_baseline.py
-```
-
-Training saves:
-
-- model file in `models/`
-- training plots in `outputs/figures/`
-- training report in `outputs/reports/`
-
-## How To Run Evaluation
-
-Evaluate the saved model on the test split:
-
-```bash
-python src/evaluate_model.py
-```
-
-Evaluation saves:
-
-- confusion matrix
-- normalised confusion matrix
-- misclassified examples figure
-- classification report
-- evaluation summary
-- test predictions CSV
-
-## How To Run Single-Image Prediction
-
-Run single-image inference with:
-
-```bash
-python src/predict_image.py path/to/your_image.jpg
-```
-
-Optional debug mode:
-
-```bash
-python src/predict_image.py path/to/your_image.jpg --debug
-```
-
-The script prints:
-
-- image path
-- class list
-- predicted class
-- confidence score
-- top 3 predictions
-
-## How To Run The Streamlit Demo App
-
-Launch the demo app locally with:
-
-```bash
-streamlit run app/streamlit_app.py
-```
-
-The app allows you to:
-
-- upload a fruit image
-- preview the uploaded image
-- run prediction with the trained model
-- view the predicted class and confidence score
-- inspect the top 3 predicted classes
-
 ## Limitations
 
-- The model was trained on a controlled dataset.
-- Real-world performance may vary depending on lighting, background, camera
-  angle, image quality, and fruit condition.
-- The current system is a classification demo, not a full production inspection
-  pipeline.
-- The project currently focuses on one baseline architecture.
+- The real-world dataset is still small.
+- Rotten fruit variation is limited.
+- The original dataset is controlled and may not represent all deployment
+  conditions.
+- The system performs image classification only; it does not include object
+  detection yet.
+- The model may struggle with unusual lighting, backgrounds, camera angles, or
+  highly ambiguous fruit conditions.
 
 ## Future Improvements
 
-- add more diverse real-world images for stronger robustness
-- compare multiple transfer learning backbones
-- add fine-tuning after baseline transfer learning
-- improve handling of ambiguous or low-confidence cases
-- package the app for easier deployment
-- add model explainability features such as saliency or Grad-CAM
+- Collect a larger real-world dataset.
+- Add more fruit types and quality conditions.
+- Fine-tune selected layers of the transfer learning backbone.
+- Try a two-stage classifier: fruit type first, freshness second.
+- Deploy the Streamlit app online.
+- Add explainability using Grad-CAM.
