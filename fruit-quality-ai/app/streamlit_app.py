@@ -22,6 +22,10 @@ MODEL_PATH = PROJECT_ROOT / "models" / "baseline_mobilenetv2.keras"
 TRAIN_DIR = PROJECT_ROOT / "dataset" / "splits" / "train"
 IMAGE_SIZE = (224, 224)
 TOP_K = 3
+ORIGINAL_TEST_ACCURACY = "97.50%"
+REAL_WORLD_ACCURACY = "81.82%"
+EFFICIENTNET_REAL_WORLD_ACCURACY = "79.55%"
+SELECTED_MODEL_NAME = "MobileNetV2"
 
 
 def check_required_paths() -> None:
@@ -95,6 +99,11 @@ def format_top_predictions(
     return [(class_names[index], float(prediction_scores[index])) for index in top_indices]
 
 
+def format_class_name(class_name: str) -> str:
+    """Convert folder-style class names into readable labels."""
+    return class_name.replace("_", " ").title()
+
+
 def build_top_predictions_table(
     top_predictions: list[tuple[str, float]],
 ) -> pd.DataFrame:
@@ -103,8 +112,8 @@ def build_top_predictions_table(
         [
             {
                 "Rank": rank,
-                "Class": class_name,
-                "Confidence (%)": round(score * 100, 2),
+                "Class": format_class_name(class_name),
+                "Confidence": f"{score * 100:.2f}%",
             }
             for rank, (class_name, score) in enumerate(top_predictions, start=1)
         ]
@@ -144,23 +153,38 @@ st.set_page_config(
 
 
 st.title("Fruit Quality Classification Demo")
+st.caption("Deployed model: MobileNetV2")
 st.write(
-    "This demo uses a MobileNetV2 transfer learning model to classify fruit "
-    "images into 16 fresh/rotten fruit categories."
+    "This demo classifies uploaded fruit images into fresh or rotten fruit "
+    "categories. The deployed model is MobileNetV2 because it performed best "
+    "on the real-world phone-captured test set while remaining lightweight."
 )
 st.info(
-    "Upload a fruit image to preview the model's predicted class, confidence "
-    "score, and top three candidate labels."
+    "For the clearest demo, upload one well-lit image with a single fruit in "
+    "view. The app will show the predicted class, confidence score, and top "
+    "three candidate labels."
 )
 
 
+st.sidebar.header("Project Results")
+st.sidebar.metric("Selected model", SELECTED_MODEL_NAME)
+st.sidebar.metric("Original test accuracy", ORIGINAL_TEST_ACCURACY)
+st.sidebar.metric("Real-world accuracy", REAL_WORLD_ACCURACY)
+
+st.sidebar.divider()
 st.sidebar.header("Demo Summary")
-st.sidebar.write("**Model:** MobileNetV2 transfer learning")
 st.sidebar.write("**Dataset:** Mendeley Fresh and Rotten Fruits Dataset")
 st.sidebar.write("**Classes:** 16")
-st.sidebar.write("**Test accuracy:** 97.50%")
 st.sidebar.write("**Input size:** 224 x 224")
 st.sidebar.write("**Note:** CPU inference is supported")
+
+with st.sidebar.expander("Model Comparison"):
+    st.metric("MobileNetV2 real-world accuracy", REAL_WORLD_ACCURACY)
+    st.metric("EfficientNetB0 real-world accuracy", EFFICIENTNET_REAL_WORLD_ACCURACY)
+    st.write(
+        "MobileNetV2 was selected because it performed slightly better on "
+        "real-world images while remaining lightweight."
+    )
 
 
 uploaded_file = st.file_uploader(
@@ -173,6 +197,11 @@ uploaded_file = st.file_uploader(
 st.caption(
     "Supported image formats: JPG, JPEG, and PNG. The uploaded image is "
     "resized to 224 x 224 before inference."
+)
+
+st.info(
+    "Suggested demo images: Try one clear single-fruit image first. Avoid "
+    "multiple fruits in one image, and avoid very blurry or dark images."
 )
 
 st.subheader("Prediction Result")
@@ -199,7 +228,8 @@ else:
 
         with result_column:
             st.subheader("Model Output")
-            st.success(f"Predicted class: {predicted_class}")
+            readable_prediction = format_class_name(predicted_class)
+            st.success(f"Predicted class: {readable_prediction}")
             st.metric("Confidence", f"{confidence * 100:.2f}%")
 
             if confidence_level == "success":
@@ -212,6 +242,13 @@ else:
             st.write("Top 3 predictions")
             st.table(top_predictions_table)
 
+            with st.expander("How to interpret this result"):
+                st.write(
+                    "High confidence does not guarantee correctness. Real-world "
+                    "lighting, background, camera angle, and fruit condition can "
+                    "affect the model's prediction."
+                )
+
     except FileNotFoundError as error:
         st.error(str(error))
     except ValueError as error:
@@ -221,10 +258,11 @@ else:
 
 
 st.divider()
-st.subheader("Limitations")
-st.caption(
-    "The model was trained on a controlled dataset.\n\n"
-    "Real-world performance may vary depending on lighting, background, camera "
-    "angle, and fruit condition.\n\n"
-    "This demo is for educational and portfolio purposes."
-)
+with st.expander("Limitations"):
+    st.write(
+        "- Trained on a controlled dataset.\n"
+        "- The real-world dataset is still small.\n"
+        "- Not designed for multiple fruits in one image.\n"
+        "- Not a medical or commercial food safety tool.\n"
+        "- Lighting, background, camera angle, and fruit condition can affect results."
+    )
